@@ -11,22 +11,40 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"time"
 
 	"code.revolvingcow.com/revolvingcow/code/cmd"
 )
 
 // Main entry point for the application.
 func main() {
+	// Configure any environment variables that may need to be applied
 	cmd.ConfigureEnvironment()
 
+	// Find the root directory to start the hunt
 	root := cmd.GetWorkingDirectory()
 	if len(os.Args[1:]) > 0 {
 		root = os.Args[1:][0]
 	}
-	c := hunter(root)
 
-	for m := range c {
-		gatherer(m)
+	// Loop through the repositories on an interval
+	interval := 15 * time.Minute
+	doEvery(interval, func() {
+		c := hunter(root)
+
+		for m := range c {
+			gatherer(m)
+		}
+	})
+}
+
+// Repeat a piece of logic on an interval
+func doEvery(d time.Duration, f func()) {
+	log.Println("Execution scheduled every", d)
+
+	for _ = range time.Tick(d) {
+		log.Println("Scanning repositories for incoming changesets...")
+		f()
 	}
 }
 
@@ -81,30 +99,27 @@ func gatherer(directory string) {
 
 	err := app.Run()
 	if err == nil {
-		count := 0
 		base := path.Base(directory)
 		b := buffer.String()
 
 		// Special logic to count the individual changesets
+		var re *regexp.Regexp
 		switch {
 		case base == ".git":
-			re := regexp.MustCompile("commit")
-			count = len(re.FindAllString(b, -1))
+			re = regexp.MustCompile("commit")
 			break
 		case base == ".hg":
-			re := regexp.MustCompile("changeset")
-			count = len(re.FindAllString(b, -1))
+			re = regexp.MustCompile("changeset")
 			break
 		case base == ".tf":
-			re := regexp.MustCompile("revno")
-			count = len(re.FindAllString(b, -1))
+			re = regexp.MustCompile("revno")
 			break
 		case base == ".bzr":
-			re := regexp.MustCompile("commit")
-			count = len(re.FindAllString(b, -1))
+			re = regexp.MustCompile("commit")
 			break
 		}
 
+		count := len(re.FindAllString(b, -1))
 		if count > 0 {
 			a := []string{}
 
