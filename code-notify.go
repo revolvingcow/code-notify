@@ -28,7 +28,7 @@ func main() {
 	}
 
 	// Loop through the repositories on an interval
-	interval := 1 * time.Minute
+	interval := 15 * time.Minute
 	doEvery(interval, func() {
 		c := hunter(root)
 
