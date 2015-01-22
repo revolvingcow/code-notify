@@ -28,7 +28,7 @@ func main() {
 	}
 
 	// Loop through the repositories on an interval
-	interval := 15 * time.Minute
+	interval := 1 * time.Minute
 	doEvery(interval, func() {
 		c := hunter(root)
 
@@ -112,7 +112,7 @@ func gatherer(directory string) {
 			re = regexp.MustCompile("changeset")
 			break
 		case base == ".tf":
-			re = regexp.MustCompile("revno")
+			re = regexp.MustCompile("[\r\n]([0-9]+)")
 			break
 		case base == ".bzr":
 			re = regexp.MustCompile("commit")
